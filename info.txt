@@ -1,0 +1,15 @@
+hey so I want to build a website for modifying youtube videos to make the ads personalized. 
+
+For now, i want to build a simple prototype using nextjs to modify youtube videos using generative AI (let's take veo3 and ads).
+
+The pipeline will look like. 
+
+Let's say there is a video of the office fire drill sponsored by red bull -> on michael, corn syrup -> on andrew, and adidas (german) -> dwight. https://youtu.be/0Kvw2BPKjz0?si=zIiCLmr0OiVFEBFc
+
+I want to place a bunch of ads there, on michael, on andrew and on dwight
+
+First we can call an API to graphon to get the timestamps for given questions. Create a UI component for this. 
+
+I want to ingest this video and ask questions for it in the UI. 
+
+I have added the video here and I've added a lot of documentation for you to go through in documentation folder

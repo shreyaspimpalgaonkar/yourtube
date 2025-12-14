@@ -1,0 +1,9 @@
+[project]
+name = "video-query"
+version = "0.1.0"
+description = "Add your description here"
+requires-python = ">=3.12"
+dependencies = [
+    "google-genai>=1.55.0",
+    "graphon-client>=0.5.0",
+]

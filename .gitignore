@@ -1,0 +1,84 @@
+# Python-generated files
+__pycache__/
+*.py[oc]
+build/
+dist/
+wheels/
+*.egg-info
+
+# Virtual environments
+.venv
+.env
+
+# Video and media files
+*.mp4
+*.avi
+*.mov
+*.mkv
+*.webm
+
+# Image files (keep logos in version control if needed)
+*.png
+*.jpg
+*.jpeg
+*.gif
+*.bmp
+
+# Data folders
+branded_video_output/
+edited_frames_office/
+final_output/
+final_output copy/
+final_output copy 2/
+final_output copy 3/
+final_output copy 4/
+goku_branded_output/
+goku_branded_output copy/
+goku_branded_output copy 2/
+interpolated/
+interpolated copy/
+proc_frames/
+proc_frames copy/
+proc_frames copy 2/
+processed_videos/
+snippets/
+snippets copy/
+vegeta_branded_output/
+
+# Temporary files
+tmp*.mp4
+*TEMP_MPY*
+*.tmp
+
+# Cache files
+.graphon_cache.json
+*.cache
+
+# IDE and editor
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Node modules (for web apps)
+node_modules/
+.next/
+out/
+
+# Lock files (optional - you may want to keep these)
+# uv.lock
+# package-lock.json
+
+# Environment and secrets
+.env
+.env.local
+.env.*.local
+
+# Logs
+*.log
+logs/

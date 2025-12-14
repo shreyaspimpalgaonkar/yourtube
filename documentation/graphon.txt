@@ -1,0 +1,393 @@
+
+Get your API Key
+Getting Started
+Installation
+Quick Start
+Full Example
+API Reference
+GraphonClient
+File Operations
+Group Operations
+Convenience Methods
+Data Models
+FileObject
+FileDetail
+GroupDetail
+QueryResponse
+Graphon Python Client
+Build knowledge graphs from your files and query them with natural language.
+
+Installation
+Install the Graphon client using pip:
+
+pip install graphon-client
+Or install from the repository:
+
+pip install -e ./src/graphon_client
+Quick Start
+Get started with Graphon in just a few lines of code:
+
+import asyncio
+from graphon_client import GraphonClient
+
+async def main():
+    # Initialize with your API key
+    client = GraphonClient(api_key="your-api-key")
+    
+    # Upload files and create a knowledge graph
+    group_id = await client.upload_process_and_create_group(
+        file_paths=["document.pdf", "video.mp4"],
+        group_name="My Knowledge Base"
+    )
+    
+    # Query your knowledge graph
+    response = await client.query_group(
+        group_id=group_id,
+        query="What are the main topics covered?"
+    )
+    
+    print(response.answer)
+
+asyncio.run(main())
+Full Example
+Here's a complete example showing the full workflow with error handling and progress tracking:
+
+import asyncio
+import os
+from graphon_client import GraphonClient
+
+# Configuration
+API_KEY = "your-api-key-here"
+FILE_LIST = [
+    "path/to/video.mp4",
+    "path/to/document.pdf",
+]
+GROUP_NAME = "My Test Group"
+QUERY = "What is an atom?"
+
+async def main():
+    client = GraphonClient(api_key=API_KEY)
+    
+    print(f"Starting upload and processing for {len(FILE_LIST)} files...")
+
+    try:
+        # Step 1: Upload and process files
+        file_objects = await client.upload_and_process_files(
+            file_paths=FILE_LIST,
+            poll_until_complete=True,
+        )
+
+        successful_files = [f for f in file_objects if f.processing_status == "SUCCESS"]
+        failed_files = [f for f in file_objects if f.processing_status == "FAILURE"]
+
+        if failed_files:
+            print(f"{len(failed_files)} file(s) failed to process:")
+            for f in failed_files:
+                print(f"  - {f.file_name}: {f.error_message}")
+
+        if not successful_files:
+            print("No files processed successfully. Cannot create group.")
+            return
+
+        # Step 2: Create a group with successfully processed files
+        print(f"Creating group with {len(successful_files)} files...")
+        successful_file_ids = [f.file_id for f in successful_files]
+        group_id = await client.create_group(
+            file_ids=successful_file_ids,
+            group_name=GROUP_NAME,
+            wait_for_ready=True,
+        )
+        print(f"Successfully created group with ID: {group_id}")
+
+        # Step 3: Query the group
+        print(f"Querying group '{GROUP_NAME}'...")
+        print(f"Query: {QUERY}")
+
+        query_response = await client.query_group(
+            group_id, 
+            QUERY, 
+            return_source_data=True
+        )
+
+        # Step 4: Print results
+        print("=" * 50)
+        print(f"Answer: {query_response.answer}")
+        print("\nSources:")
+        for source in query_response.sources:
+            node_type = source.get("node_type", "N/A")
+            print(f"  - Type: {node_type}")
+            if node_type == "video":
+                print(f"    Video: {source.get('video_name')}")
+                print(f"    Time: {source.get('start_time')}-{source.get('end_time')}")
+            elif node_type == "document":
+                print(f"    PDF: {source.get('pdf_name')}, Page: {source.get('page_num')}")
+            elif node_type == "image":
+                print(f"    Image: {source.get('image_name')}")
+
+    except Exception as e:
+        print(f"An error occurred: {e}")
+
+if __name__ == "__main__":
+    asyncio.run(main())
+GraphonClient
+The main client class for interacting with the Graphon API.
+
+__init__
+GraphonClient(api_key: str)
+Initialize the Graphon client with your API key.
+
+Parameters
+Name	Type	Description
+api_key	str	Your Graphon API key (obtained from signup)
+Example
+client = GraphonClient(api_key="lgo_your_api_key_here")
+File Operations
+upload_and_process_files
+async upload_and_process_files(
+    file_paths: List[str],
+    poll_until_complete: bool = True,
+    timeout: int = 1800,
+    poll_interval: int = 3,
+    on_progress: Optional[callable] = None
+) -> List[FileObject]
+Upload and process multiple files. This is the main method for getting files into Graphon.
+
+Parameters
+Name	Type	Description
+file_paths	List[str]	List of local file paths to upload
+poll_until_complete	bool	If True, waits for all files to finish processing (default: True)
+timeout	int	Maximum time to wait per file in seconds (default: 1800)
+poll_interval	int	Time between status checks in seconds (default: 3)
+on_progress	Optional[callable]	Callback function (step: str, current: int, total: int)
+Returns
+List[FileObject] — List of file objects with file_id, file_name, processing_status, and error_message.
+
+Supported File Types
+Video: mp4, mov, avi, mkv, webm
+Document: pdf, doc, docx, txt
+Image: jpg, jpeg, png, gif, webp
+Example
+file_objects = await client.upload_and_process_files(
+    file_paths=["video.mp4", "document.pdf"],
+    poll_until_complete=True
+)
+
+for f in file_objects:
+    print(f"{f.file_name}: {f.processing_status}")
+list_files
+async list_files(
+    status_filter: Optional[str] = None,
+    file_type: Optional[str] = None
+) -> List[FileDetail]
+List all files for the authenticated user.
+
+Parameters
+Name	Type	Description
+status_filter	Optional[str]	Filter by processing status (UNPROCESSED, PROCESSING, SUCCESS, FAILURE)
+file_type	Optional[str]	Filter by file type (video, document, image)
+Returns
+List[FileDetail] — List of detailed file objects.
+
+Example
+files = await client.list_files(status_filter="SUCCESS")
+for f in files:
+    print(f"{f.file_name} ({f.file_type}): {f.processing_status}")
+poll_file_until_complete
+async poll_file_until_complete(
+    file_id: str,
+    timeout: int = 1800,
+    poll_interval: int = 3,
+    on_progress: Optional[callable] = None
+) -> FileDetail
+Poll a file until processing completes (SUCCESS or FAILURE).
+
+Parameters
+Name	Type	Description
+file_id	str	The file ID to poll
+timeout	int	Maximum time to wait in seconds (default: 1800)
+poll_interval	int	Time between polls in seconds (default: 3)
+on_progress	Optional[callable]	Callback function (status: str) called on each poll
+Returns
+FileDetail — File detail object with final status.
+
+Raises
+Exception — If processing fails or times out.
+
+Group Operations
+create_group
+async create_group(
+    file_ids: List[str],
+    group_name: str,
+    wait_for_ready: bool = False,
+    timeout: int = 3600,
+    poll_interval: int = 5,
+    on_progress: Optional[callable] = None
+) -> str
+Create a group (knowledge graph) from processed files.
+
+Parameters
+Name	Type	Description
+file_ids	List[str]	List of file IDs (must all have processing_status=SUCCESS)
+group_name	str	Name for the group
+wait_for_ready	bool	If True, waits for graph building to complete (default: False)
+timeout	int	Maximum time to wait for graph building in seconds (default: 3600)
+poll_interval	int	Time between status checks in seconds (default: 5)
+on_progress	Optional[callable]	Callback function (status: str) for progress updates
+Returns
+str — The group ID.
+
+Example
+group_id = await client.create_group(
+    file_ids=["file_id_1", "file_id_2"],
+    group_name="Research Papers",
+    wait_for_ready=True
+)
+query_group
+async query_group(
+    group_id: str,
+    query: str,
+    return_source_data: bool = False
+) -> QueryResponse
+Query a group's unified knowledge graph with natural language.
+
+Parameters
+Name	Type	Description
+group_id	str	The group ID to query
+query	str	Natural language query
+return_source_data	bool	If True, include text content for documents and time-limited signed URLs for images/videos (default: False)
+Returns
+QueryResponse — Response containing the answer and sources.
+
+Example
+response = await client.query_group(
+    group_id="grp_abc123",
+    query="What are the key findings?",
+    return_source_data=True
+)
+
+print(f"Answer: {response.answer}")
+for source in response.sources:
+    print(f"  Source: {source}")
+list_groups
+async list_groups() -> List[GroupListItem]
+List all groups for the authenticated user.
+
+Returns
+List[GroupListItem] — List of group summary objects.
+
+Example
+groups = await client.list_groups()
+for g in groups:
+    print(f"{g.group_name}: {g.file_count} files, status: {g.graph_status}")
+get_group_status
+async get_group_status(group_id: str) -> GroupDetail
+Get the current status of a group.
+
+Parameters
+Name	Type	Description
+group_id	str	The group ID
+Returns
+GroupDetail — Detailed group information.
+
+poll_group_until_ready
+async poll_group_until_ready(
+    group_id: str,
+    timeout: int = 3600,
+    poll_interval: int = 5,
+    on_progress: Optional[callable] = None
+) -> GroupDetail
+Poll a group until graph building completes (ready or failed).
+
+Parameters
+Name	Type	Description
+group_id	str	The group ID to poll
+timeout	int	Maximum time to wait in seconds (default: 3600)
+poll_interval	int	Time between polls in seconds (default: 5)
+on_progress	Optional[callable]	Callback function (status: str) called on each poll
+Returns
+GroupDetail — Group detail object with final status.
+
+Raises
+Exception — If graph building fails or times out.
+
+Convenience Methods
+upload_process_and_create_group
+async upload_process_and_create_group(
+    file_paths: List[str],
+    group_name: str,
+    on_progress: Optional[callable] = None
+) -> str
+One-shot method: Upload files, process them, and create a group. This is the simplest way to create a knowledge base from files.
+
+Parameters
+Name	Type	Description
+file_paths	List[str]	List of local file paths
+group_name	str	Name for the group
+on_progress	Optional[callable]	Callback function (step: str, current: int, total: int)
+Returns
+str — The group ID.
+
+Example
+# Simplest way to get started
+group_id = await client.upload_process_and_create_group(
+    file_paths=["lecture.mp4", "notes.pdf", "diagram.png"],
+    group_name="Course Materials"
+)
+
+# Now query your knowledge graph
+response = await client.query_group(group_id, "Summarize the main concepts")
+Data Models
+FileObject
+Represents a file in the Graphon system (summary view).
+
+Field	Type	Description
+file_id	str	Unique file identifier
+file_name	str	Original file name
+file_type	str	Type of file (video, document, image)
+processing_status	str	UNPROCESSED, PROCESSING, SUCCESS, or FAILURE
+error_message	Optional[str]	Error details if processing failed
+FileDetail
+Detailed file information from the API.
+
+Field	Type	Description
+file_id	str	Unique file identifier
+user_id	str	Owner's user ID
+file_name	str	Original file name
+file_type	str	Type of file (video, document, image)
+file_size_bytes	int	File size in bytes
+file_gcs_location	str	Cloud storage location
+processing_status	str	Current processing status
+processing_start_time	Optional[str]	When processing started
+error_message	Optional[str]	Error details if failed
+metadata	Optional[Dict]	Additional metadata
+created_at	Optional[str]	Creation timestamp
+updated_at	Optional[str]	Last update timestamp
+GroupDetail
+Detailed group information from the API.
+
+Field	Type	Description
+group_id	str	Unique group identifier
+user_id	str	Owner's user ID
+group_name	str	Name of the group
+file_ids	List[str]	IDs of files in the group
+graph_status	str	pending, building, ready, or failed
+graph_gcs_location	Optional[str]	Cloud storage location for the graph
+graph_job_id	Optional[str]	Background job ID for graph building
+metadata	Optional[Dict]	Additional metadata
+created_at	Optional[str]	Creation timestamp
+updated_at	Optional[str]	Last update timestamp
+QueryResponse
+Response from querying a group's unified graph.
+
+Field	Type	Description
+answer	str	The generated answer to your query
+sources	List[Dict]	Source documents/segments that informed the answer
+attention_nodes	List[Dict]	Graph nodes with attention scores showing relevance
+Source Object Fields
+Each source in sources contains:
+
+node_type: "video", "document", or "image"
+For video: video_name, start_time, end_time, time_limited_url
+For document: pdf_name, page_num, text
+For image: image_name, time_limited_url
+© 2025 Graphon. All rights reserved.
