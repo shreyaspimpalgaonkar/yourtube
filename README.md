@@ -100,13 +100,6 @@ The main processing script that:
 4. Generates interpolated video using Veo 3.1
 5. Preserves audio throughout the process
 
-### Character/Brand Mapping
-
-```python
-GOKU_SNIPPETS = {8, 11, 17, 19, 24, 31, 29, 44, 57}   # → Red Bull
-VEGETA_SNIPPETS = {18, 20, 23, 28, 33, 46}            # → Monster
-```
-
 ### Web Interface (`video-ads-prototype/`)
 
 A Next.js application providing:
